@@ -124,18 +124,6 @@ Edit `audio_processing.h`:
                          // Higher = faster tracking, less stable
 ```
 
-## 📊 Performance Metrics
-
-- **CPU Usage**: ~60% @ 168MHz (measured with RTOS task analyzer)
-- **Memory Usage**:
-  - Flash: ~15KB (code)
-  - RAM: ~8KB (buffers + stack)
-- **Latency Breakdown**:
-  - ADC buffering: 5.33ms (256 samples)
-  - Processing: <1ms
-  - I2S buffering: 5.33ms (256 samples)
-  - **Total**: ~10.7ms
-
 ## 🧪 Testing
 
 1. **Sweep test**: Input 20Hz-20kHz sine sweep, verify passband
@@ -157,9 +145,6 @@ Edit `audio_processing.h`:
 - [ ] Port to fixed-point Q15 for lower CPU usage
 - [ ] Add USB audio class for PC connectivity
 - [ ] Implement pitch shifting / time stretching
-- [ ] Add real-time spectrum visualization via UART
-
-
 
 ## 👤 Author
 
