@@ -1,0 +1,239 @@
+/**
+  ******************************************************************************
+  * @file    audio_processing.c
+  * @brief   Real-time audio DSP processing implementation
+  * @author  Berkan Tali
+  * @date    2025
+  ******************************************************************************
+  */
+
+#include "audio_processing.h"
+#include <string.h>
+#include <math.h>
+
+/* Private buffers - aligned for optimal DMA/CMSIS-DSP performance */
+__attribute__((aligned(4))) static float32_t fft_input[FFT_SIZE];
+__attribute__((aligned(4))) static float32_t fft_output[FFT_SIZE];
+__attribute__((aligned(4))) static float32_t overlap_buffer[HOP_SIZE];
+__attribute__((aligned(4))) static float32_t input_history[HOP_SIZE];
+__attribute__((aligned(4))) static float32_t window[FFT_SIZE];
+__attribute__((aligned(4))) static float32_t spectral_mask[FFT_SIZE / 2 + 1];
+
+/* FFT instance */
+static arm_rfft_fast_instance_f32 fft_instance;
+
+/* DC offset tracking */
+static float32_t dc_offset = 2048.0f;  /* Initial estimate (12-bit ADC midpoint) */
+
+/* Private function prototypes */
+static void Init_Hann_Window(void);
+static void Init_Spectral_Mask(void);
+static void Process_FFT_Block(float32_t *input, float32_t *output);
+static void Apply_Spectral_Mask(float32_t *spectrum);
+
+/**
+  * @brief  Initialize Hann window for FFT
+  * @param  None
+  * @retval None
+  * @note   Hann window: w[n] = 0.5 * (1 - cos(2*pi*n/(N-1)))
+  *         Reduces spectral leakage in FFT
+  */
+static void Init_Hann_Window(void)
+{
+    for (int n = 0; n < FFT_SIZE; n++)
+    {
+        /* Hann window formula */
+        window[n] = 0.5f * (1.0f - arm_cos_f32(2.0f * PI * n / (FFT_SIZE - 1)));
+    }
+}
+
+/**
+  * @brief  Initialize spectral mask for frequency-domain filtering
+  * @param  None
+  * @retval None
+  * @note   Default: All frequencies pass through (mask = 1.0)
+  *         Uncomment filter sections below to enable filtering
+  */
+static void Init_Spectral_Mask(void)
+{
+    /* Initialize all bins to 1.0 (no filtering) */
+    for (int k = 0; k <= FFT_SIZE / 2; k++)
+    {
+        spectral_mask[k] = 1.0f;
+    }
+    
+    // Low-pass filter: Remove high frequencies above 4kHz
+    /*
+    float cutoff_freq = 4000.0f;
+    int cutoff_bin = (int)(cutoff_freq * FFT_SIZE / SAMPLE_RATE);
+    for (int k = cutoff_bin; k <= FFT_SIZE / 2; k++)
+    {
+        spectral_mask[k] = 0.0f;  // Zero out high frequencies
+    }
+    */
+
+    // Notch filter: Remove specific frequency (e.g., 1kHz hum)
+    /*
+    float notch_freq = 1000.0f;
+    int notch_bin = (int)(notch_freq * FFT_SIZE / SAMPLE_RATE);
+    int notch_width = 2;  // Bins to zero on each side
+    for (int k = notch_bin - notch_width; k <= notch_bin + notch_width; k++)
+    {
+        if (k >= 0 && k <= FFT_SIZE / 2)
+        {
+            spectral_mask[k] = 0.0f;
+        }
+    }
+    */
+
+    // Band-pass filter: Keep only voice frequencies (300Hz-3400Hz)
+    /*
+    float low_freq = 300.0f;
+    float high_freq = 3400.0f;
+    int low_bin = (int)(low_freq * FFT_SIZE / SAMPLE_RATE);
+    int high_bin = (int)(high_freq * FFT_SIZE / SAMPLE_RATE);
+    for (int k = 0; k <= FFT_SIZE / 2; k++)
+    {
+        if (k < low_bin || k > high_bin)
+        {
+            spectral_mask[k] = 0.0f;  // Zero out frequencies outside voice band
+        }
+    }
+    */
+
+    // High-pass filter: Remove low-frequency rumble below 100Hz
+    /*
+    float highpass_freq = 100.0f;
+    int highpass_bin = (int)(highpass_freq * FFT_SIZE / SAMPLE_RATE);
+    for (int k = 0; k <= highpass_bin; k++)
+    {
+        spectral_mask[k] = 0.0f;  // Zero out low frequencies
+    }
+    */
+}
+
+/**
+  * @brief  Apply spectral mask to FFT output
+  * @param  spectrum: Pointer to FFT output (interleaved real/imag)
+  * @retval None
+  * @note   FFT output format: [Real0, Real_N/2, Real1, Imag1, Real2, Imag2, ...]
+  *         DC and Nyquist bins are real-only
+  */
+static void Apply_Spectral_Mask(float32_t *spectrum)
+{
+    // Apply mask to DC component (bin 0)
+    spectrum[0] *= spectral_mask[0];
+    
+    // Apply mask to Nyquist component (bin N/2)
+    spectrum[1] *= spectral_mask[FFT_SIZE / 2];
+
+    // Apply mask to all other bins (complex pairs)
+    for (int k = 1; k < FFT_SIZE / 2; k++)
+    {
+        int idx = k * 2;
+        spectrum[idx] *= spectral_mask[k];       /* Real part */
+        spectrum[idx + 1] *= spectral_mask[k];   /* Imaginary part */
+    }
+}
+
+/**
+  * @brief  Process one FFT block with overlap-add
+  * @param  input: Input buffer (FFT_SIZE samples)
+  * @param  output: Output buffer (FFT_SIZE samples)
+  * @retval None
+  * @note   Steps: Window -> FFT -> Mask -> IFFT
+  */
+static void Process_FFT_Block(float32_t *input, float32_t *output)
+{
+  float32_t fft_buffer[FFT_SIZE];
+  arm_mult_f32(input, window, fft_buffer, FFT_SIZE);
+  arm_rfft_fast_f32(&fft_instance, fft_buffer, output, 0);
+  Apply_Spectral_Mask(output);
+  arm_rfft_fast_f32(&fft_instance, output, fft_buffer, 1);
+  memcpy(output, fft_buffer, FFT_SIZE * sizeof(float32_t));
+}
+
+/**
+  * @brief  Initialize audio processing module
+  * @param  None
+  * @retval AUDIO_OK on success, AUDIO_ERROR on failure
+  */
+uint8_t Audio_Init(void)
+{
+    // Initialize FFT instance
+    arm_status status = arm_rfft_fast_init_f32(&fft_instance, FFT_SIZE);
+    if (status != ARM_MATH_SUCCESS)
+    {
+        return AUDIO_ERROR;
+    }
+    
+    // Initialize window and spectral mask
+    Init_Hann_Window();
+    Init_Spectral_Mask();
+    
+    // Clear all buffers
+    memset(overlap_buffer, 0, sizeof(overlap_buffer));
+    memset(input_history, 0, sizeof(input_history));
+    
+    return AUDIO_OK;
+}
+
+/**
+  * @brief  Process one block of audio samples
+  * @param  adc_samples: Pointer to ADC input samples (uint16_t, HOP_SIZE length)
+  * @param  i2s_samples: Pointer to I2S output buffer (int16_t, HOP_SIZE*2 stereo)
+  * @retval None
+  */
+void Audio_ProcessBlock(uint16_t *adc_samples, int16_t *i2s_samples)
+{
+    float32_t temp_buffer[HOP_SIZE];
+    
+    // Build FFT input [previous HOP_SIZE samples | current HOP_SIZE samples]
+    memcpy(fft_input, input_history, HOP_SIZE * sizeof(float32_t));
+    
+    //Convert ADC samples to float and remove DC offset
+    for (int i = 0; i < HOP_SIZE; i++)
+    {
+        float32_t raw_val = (float32_t)adc_samples[i];
+        dc_offset = (1.0f - DC_ALPHA) * dc_offset + DC_ALPHA * raw_val;
+        fft_input[HOP_SIZE + i] = (raw_val - dc_offset) * (1.0f / 2048.0f);
+    }
+    
+    // Save current samples for next overlap
+    memcpy(input_history, &fft_input[HOP_SIZE], HOP_SIZE * sizeof(float32_t));
+    Process_FFT_Block(fft_input, fft_output);
+    
+    // CRITICAL: Save overlap BEFORE modifying fft_output
+    float32_t next_overlap[HOP_SIZE];
+    memcpy(next_overlap, &fft_output[HOP_SIZE], HOP_SIZE * sizeof(float32_t));
+    
+    // Add previous overlap to current output
+    arm_add_f32(fft_output, overlap_buffer, temp_buffer, HOP_SIZE);
+    
+    // Apply gain
+    arm_scale_f32(temp_buffer, AUDIO_GAIN, temp_buffer, HOP_SIZE);
+
+    // arm_float_to_q15 expects [-1, +1] range and saturates to [-32768, 32767]
+    int16_t temp_q15[HOP_SIZE];
+    arm_float_to_q15(temp_buffer, temp_q15, HOP_SIZE);
+    
+    //Interleave for stereo output (L=R)
+    for (int i = 0; i < HOP_SIZE; i++)
+    {
+        i2s_samples[i * 2] = temp_q15[i];       // Left channel
+        i2s_samples[i * 2 + 1] = temp_q15[i];   // Right channel
+    }
+    
+    // Update overlap buffer for next block
+    memcpy(overlap_buffer, next_overlap, HOP_SIZE * sizeof(float32_t));
+}
+
+/**
+  * @brief  Get current DC offset estimate
+  * @param  None
+  * @retval Current DC offset value
+  */
+float32_t Audio_GetDCOffset(void)
+{
+    return dc_offset;
+}
