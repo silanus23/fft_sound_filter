@@ -117,18 +117,14 @@ static void Init_Spectral_Mask(void)
   */
 static void Apply_Spectral_Mask(float32_t *spectrum)
 {
-    // Apply mask to DC component (bin 0)
     spectrum[0] *= spectral_mask[0];
-    
-    // Apply mask to Nyquist component (bin N/2)
     spectrum[1] *= spectral_mask[FFT_SIZE / 2];
 
-    // Apply mask to all other bins (complex pairs)
     for (int k = 1; k < FFT_SIZE / 2; k++)
     {
         int idx = k * 2;
-        spectrum[idx] *= spectral_mask[k];       /* Real part */
-        spectrum[idx + 1] *= spectral_mask[k];   /* Imaginary part */
+        spectrum[idx] *= spectral_mask[k];
+        spectrum[idx + 1] *= spectral_mask[k];
     }
 }
 
@@ -146,8 +142,11 @@ static void Process_FFT_Block(float32_t *input, float32_t *output)
   arm_rfft_fast_f32(&fft_instance, fft_buffer, output, 0);
   Apply_Spectral_Mask(output);
   arm_rfft_fast_f32(&fft_instance, output, fft_buffer, 1);
-  memcpy(output, fft_buffer, FFT_SIZE * sizeof(float32_t));
+  
+  // Apply window again after IFFT for proper COLA
+  arm_mult_f32(fft_buffer, window, output, FFT_SIZE);
 }
+
 
 /**
   * @brief  Initialize audio processing module
@@ -167,7 +166,6 @@ uint8_t Audio_Init(void)
     Init_Hann_Window();
     Init_Spectral_Mask();
     
-    // Clear all buffers
     memset(overlap_buffer, 0, sizeof(overlap_buffer));
     memset(input_history, 0, sizeof(input_history));
     
@@ -196,21 +194,25 @@ void Audio_ProcessBlock(uint16_t *adc_samples, int16_t *i2s_samples)
     memcpy(input_history, &fft_input[HOP_SIZE], HOP_SIZE * sizeof(float32_t));
     Process_FFT_Block(fft_input, fft_output);
     
-    // Save overlap BEFORE modifying fft_output
     float32_t next_overlap[HOP_SIZE];
     memcpy(next_overlap, &fft_output[HOP_SIZE], HOP_SIZE * sizeof(float32_t));
     
     arm_add_f32(fft_output, overlap_buffer, temp_buffer, HOP_SIZE);
     arm_scale_f32(temp_buffer, AUDIO_GAIN, temp_buffer, HOP_SIZE);
 
-    // arm_float_to_q15 expects [-1, +1] range and saturates to [-32768, 32767]
+    for (int i = 0; i < HOP_SIZE; i++)
+    {
+        if (temp_buffer[i] > 1.0f) temp_buffer[i] = 1.0f;
+        if (temp_buffer[i] < -1.0f) temp_buffer[i] = -1.0f;
+    }
+
     int16_t temp_q15[HOP_SIZE];
     arm_float_to_q15(temp_buffer, temp_q15, HOP_SIZE);
     
     for (int i = 0; i < HOP_SIZE; i++)
     {
-        i2s_samples[i * 2] = temp_q15[i];       // Left channel
-        i2s_samples[i * 2 + 1] = temp_q15[i];   // Right channel
+        i2s_samples[i * 2] = temp_q15[i];
+        i2s_samples[i * 2 + 1] = temp_q15[i];
     }
 
     memcpy(overlap_buffer, next_overlap, HOP_SIZE * sizeof(float32_t));
@@ -225,3 +227,4 @@ float32_t Audio_GetDCOffset(void)
 {
     return dc_offset;
 }
+ 

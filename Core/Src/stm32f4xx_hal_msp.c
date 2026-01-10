@@ -99,7 +99,7 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
 
     __HAL_RCC_GPIOA_CLK_ENABLE();
     /**ADC1 GPIO Configuration
-    PA1     ------> ADC1_IN1
+    PA1 = ADC1_IN1
     */
     GPIO_InitStruct.Pin = GPIO_PIN_1;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
@@ -150,7 +150,7 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
     __HAL_RCC_ADC1_CLK_DISABLE();
 
     /**ADC1 GPIO Configuration
-    PA1     ------> ADC1_IN1
+    PA1 = ADC1_IN1
     */
     HAL_GPIO_DeInit(GPIOA, GPIO_PIN_1);
 
@@ -180,8 +180,8 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
 
     __HAL_RCC_GPIOB_CLK_ENABLE();
     /**I2C1 GPIO Configuration
-    PB6     ------> I2C1_SCL
-    PB9     ------> I2C1_SDA
+    PB6 = I2C1_SCL
+    PB9 = I2C1_SDA
     */
     GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_9;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
@@ -222,8 +222,8 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* hi2c)
     __HAL_RCC_I2C1_CLK_DISABLE();
 
     /**I2C1 GPIO Configuration
-    PB6     ------> I2C1_SCL
-    PB9     ------> I2C1_SDA
+    PB6 = I2C1_SCL
+    PB9 = I2C1_SDA
     */
     HAL_GPIO_DeInit(GPIOB, GPIO_PIN_6);
 
@@ -271,10 +271,10 @@ void HAL_I2S_MspInit(I2S_HandleTypeDef* hi2s)
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOC_CLK_ENABLE();
     /**I2S3 GPIO Configuration
-    PA4     ------> I2S3_WS
-    PC7     ------> I2S3_MCK
-    PC10     ------> I2S3_CK
-    PC12     ------> I2S3_SD
+    PA4 = I2S3_WS
+    PC7 = I2S3_MCK
+    PC10 = I2S3_CK
+    PC12 = I2S3_SD
     */
     GPIO_InitStruct.Pin = GPIO_PIN_4;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -334,10 +334,10 @@ void HAL_I2S_MspDeInit(I2S_HandleTypeDef* hi2s)
     __HAL_RCC_SPI3_CLK_DISABLE();
 
     /**I2S3 GPIO Configuration
-    PA4     ------> I2S3_WS
-    PC7     ------> I2S3_MCK
-    PC10     ------> I2S3_CK
-    PC12     ------> I2S3_SD
+    PA4 = I2S3_WS
+    PC7 = I2S3_MCK
+    PC10 = I2S3_CK
+    PC12 = I2S3_SD
     */
     HAL_GPIO_DeInit(GPIOA, GPIO_PIN_4);
 
@@ -460,8 +460,8 @@ void HAL_PCD_MspDeInit(PCD_HandleTypeDef* hpcd)
     __HAL_RCC_USB_OTG_FS_CLK_DISABLE();
 
     /**USB_OTG_FS GPIO Configuration
-    PA11     ------> USB_OTG_FS_DM
-    PA12     ------> USB_OTG_FS_DP
+    PA11 = USB_OTG_FS_DM
+    PA12 = USB_OTG_FS_DP
     */
     HAL_GPIO_DeInit(GPIOA, GPIO_PIN_11|GPIO_PIN_12);
 
