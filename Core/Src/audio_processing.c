@@ -12,16 +12,16 @@
 #include <math.h>
 
 // Private buffers - aligned for optimal DMA/CMSIS-DSP performance 
-__attribute__((aligned(4))) static float32_t fft_input[FFT_SIZE];
-__attribute__((aligned(4))) static float32_t fft_output[FFT_SIZE];
-__attribute__((aligned(4))) static float32_t overlap_buffer[HOP_SIZE];
-__attribute__((aligned(4))) static float32_t input_history[HOP_SIZE];
-__attribute__((aligned(4))) static float32_t window[FFT_SIZE];
-__attribute__((aligned(4))) static float32_t spectral_mask[FFT_SIZE / 2 + 1];
+__attribute__((aligned(4))) static volatile float32_t fft_input[FFT_SIZE];
+__attribute__((aligned(4))) static volatile float32_t fft_output[FFT_SIZE];
+__attribute__((aligned(4))) static volatile float32_t overlap_buffer[HOP_SIZE];
+__attribute__((aligned(4))) static volatile float32_t input_history[HOP_SIZE];
+__attribute__((aligned(4))) static volatile float32_t window[FFT_SIZE];
+__attribute__((aligned(4))) static volatile float32_t spectral_mask[FFT_SIZE / 2 + 1];
 
 
 static arm_rfft_fast_instance_f32 fft_instance;
-static float32_t dc_offset = 2048.0f;  // Initial estimate (12-bit ADC midpoint)
+static float32_t dc_offset = 2048.0f;
 
 static void Init_Hann_Window(void);
 static void Init_Spectral_Mask(void);
