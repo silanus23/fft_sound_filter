@@ -11,7 +11,7 @@
 #include <string.h>
 #include <math.h>
 
-/* Private buffers - aligned for optimal DMA/CMSIS-DSP performance */
+// Private buffers - aligned for optimal DMA/CMSIS-DSP performance 
 __attribute__((aligned(4))) static float32_t fft_input[FFT_SIZE];
 __attribute__((aligned(4))) static float32_t fft_output[FFT_SIZE];
 __attribute__((aligned(4))) static float32_t overlap_buffer[HOP_SIZE];
@@ -19,13 +19,10 @@ __attribute__((aligned(4))) static float32_t input_history[HOP_SIZE];
 __attribute__((aligned(4))) static float32_t window[FFT_SIZE];
 __attribute__((aligned(4))) static float32_t spectral_mask[FFT_SIZE / 2 + 1];
 
-/* FFT instance */
+
 static arm_rfft_fast_instance_f32 fft_instance;
+static float32_t dc_offset = 2048.0f;  // Initial estimate (12-bit ADC midpoint)
 
-/* DC offset tracking */
-static float32_t dc_offset = 2048.0f;  /* Initial estimate (12-bit ADC midpoint) */
-
-/* Private function prototypes */
 static void Init_Hann_Window(void);
 static void Init_Spectral_Mask(void);
 static void Process_FFT_Block(float32_t *input, float32_t *output);
@@ -42,7 +39,6 @@ static void Init_Hann_Window(void)
 {
     for (int n = 0; n < FFT_SIZE; n++)
     {
-        /* Hann window formula */
         window[n] = 0.5f * (1.0f - arm_cos_f32(2.0f * PI * n / (FFT_SIZE - 1)));
     }
 }
@@ -56,7 +52,7 @@ static void Init_Hann_Window(void)
   */
 static void Init_Spectral_Mask(void)
 {
-    /* Initialize all bins to 1.0 (no filtering) */
+
     for (int k = 0; k <= FFT_SIZE / 2; k++)
     {
         spectral_mask[k] = 1.0f;
@@ -188,10 +184,8 @@ void Audio_ProcessBlock(uint16_t *adc_samples, int16_t *i2s_samples)
 {
     float32_t temp_buffer[HOP_SIZE];
     
-    // Build FFT input [previous HOP_SIZE samples | current HOP_SIZE samples]
     memcpy(fft_input, input_history, HOP_SIZE * sizeof(float32_t));
     
-    //Convert ADC samples to float and remove DC offset
     for (int i = 0; i < HOP_SIZE; i++)
     {
         float32_t raw_val = (float32_t)adc_samples[i];
@@ -199,32 +193,26 @@ void Audio_ProcessBlock(uint16_t *adc_samples, int16_t *i2s_samples)
         fft_input[HOP_SIZE + i] = (raw_val - dc_offset) * (1.0f / 2048.0f);
     }
     
-    // Save current samples for next overlap
     memcpy(input_history, &fft_input[HOP_SIZE], HOP_SIZE * sizeof(float32_t));
     Process_FFT_Block(fft_input, fft_output);
     
-    // CRITICAL: Save overlap BEFORE modifying fft_output
+    // Save overlap BEFORE modifying fft_output
     float32_t next_overlap[HOP_SIZE];
     memcpy(next_overlap, &fft_output[HOP_SIZE], HOP_SIZE * sizeof(float32_t));
     
-    // Add previous overlap to current output
     arm_add_f32(fft_output, overlap_buffer, temp_buffer, HOP_SIZE);
-    
-    // Apply gain
     arm_scale_f32(temp_buffer, AUDIO_GAIN, temp_buffer, HOP_SIZE);
 
     // arm_float_to_q15 expects [-1, +1] range and saturates to [-32768, 32767]
     int16_t temp_q15[HOP_SIZE];
     arm_float_to_q15(temp_buffer, temp_q15, HOP_SIZE);
     
-    //Interleave for stereo output (L=R)
     for (int i = 0; i < HOP_SIZE; i++)
     {
         i2s_samples[i * 2] = temp_q15[i];       // Left channel
         i2s_samples[i * 2 + 1] = temp_q15[i];   // Right channel
     }
-    
-    // Update overlap buffer for next block
+
     memcpy(overlap_buffer, next_overlap, HOP_SIZE * sizeof(float32_t));
 }
 

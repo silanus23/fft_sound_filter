@@ -181,7 +181,6 @@ int main(void)
   MX_USB_OTG_FS_PCD_Init();
   /* USER CODE BEGIN 2 */
   
-  // Initialize CS43L22 audio codec
   CS43L22_Reset();
   HAL_Delay(10);
   
@@ -191,32 +190,27 @@ int main(void)
       Error_Handler();
   }
 
-  // Initialize audio processing (FFT, windows, filters)
   if (Audio_Init() != AUDIO_OK)
   {
       error_flags |= ERROR_AUDIO_INIT;
       Error_Handler();  // Fatal error - cannot process audio
   }
 
-  // Clear DMA buffers before starting 
   memset((void*)adc_buffer, 0, sizeof(adc_buffer));
   memset((void*)i2s_buffer, 0, sizeof(i2s_buffer));
   
-  // Start ADC with DMA in circular mode 
   if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_buffer, HOP_SIZE * 2) != HAL_OK)
   {
       error_flags |= ERROR_ADC_START;
       Error_Handler();
   }
   
-  // Start timer (triggers ADC at 48kHz)
   if (HAL_TIM_Base_Start(&htim2) != HAL_OK)
   {
       error_flags |= ERROR_TIM_START;
       Error_Handler();
   }
   
-  // Start I2S transmission with DMA in circular mode
   if (HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t*)i2s_buffer, HOP_SIZE * 2 * 2) != HAL_OK)
   {
       error_flags |= ERROR_I2S_START;
@@ -231,11 +225,9 @@ int main(void)
   {
       if (i2s_half_ready && adc_half_ready)
       {
-          // Clear flags immediately to detect missed callbacks
           i2s_half_ready = 0;
           adc_half_ready = 0;
           
-          // Process audio block: ADC buffer[0] -> I2S buffer[0]
           Audio_ProcessBlock((uint16_t*)&adc_buffer[0], 
                             (int16_t*)&i2s_buffer[0]);
       }
@@ -251,8 +243,6 @@ int main(void)
                             (int16_t*)&i2s_buffer[HOP_SIZE * 2]);
       }
       
-      // Optional: Add overrun detection here
-      // If both half and full flags are set simultaneously, a deadline missed
       
     /* USER CODE END WHILE */
 
@@ -544,10 +534,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
-  /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(CS43l22_RST_GPIO_Port, CS43l22_RST_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin : CS43l22_RST_Pin */
   GPIO_InitStruct.Pin = CS43l22_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;

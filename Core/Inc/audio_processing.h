@@ -23,17 +23,17 @@
 #include "stm32f4xx_hal.h"
 #include "arm_math.h"
 
-// DSP Configuration */
+// DSP Configuration
 #define FFT_SIZE            512    // FFT length in samples
 #define HOP_SIZE            256    // Hop size (50% overlap)
 #define SAMPLE_RATE         48000  // ADC/DAC sample rate in Hz
 
-// Audio Processing Parameters */
-#define AUDIO_GAIN          1.0f        // Output gain multiplier
+// Audio Processing Parameters
+#define AUDIO_GAIN          0.5f        // Output gain multiplier
 #define NOISE_GATE_THRESH   0.02f       // Noise gate threshold
-#define DC_ALPHA            0.01f       // DC offset filter coefficient (lower = slower tracking)
+#define DC_ALPHA            0.001f       // DC offset filter coefficient (lower = slower tracking)
 
-// Function return codes */
+// Function return codes
 #define AUDIO_OK      0
 #define AUDIO_ERROR   1
 
@@ -64,4 +64,4 @@ void Audio_ProcessBlock(uint16_t *adc_samples, int16_t *i2s_samples);
   */
 float32_t Audio_GetDCOffset(void);
 
-#endif /* AUDIO_PROCESSING_H */
+#endif //  AUDIO_PROCESSING_H
