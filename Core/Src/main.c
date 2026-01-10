@@ -225,9 +225,11 @@ int main(void)
   {
       if (i2s_half_ready && adc_half_ready)
       {
+          __disable_irq();
           i2s_half_ready = 0;
           adc_half_ready = 0;
-          
+          __enable_irq();
+
           Audio_ProcessBlock((uint16_t*)&adc_buffer[0], 
                             (int16_t*)&i2s_buffer[0]);
       }
