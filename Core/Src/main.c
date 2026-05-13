@@ -12,14 +12,6 @@
   * This software is licensed under terms that can be found in the LICENSE file
   * in the root directory of this software component.
   * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  * @project_description
-  * Real-time audio processing using STM32F407 Discovery board:
-  * - ADC input: PA1 (12-bit, 48kHz sampling via TIM2 trigger)
-  * - I2S output: CS43L22 DAC (16-bit stereo, 48kHz)
-  * - DSP: 512-point FFT with 50% overlap-add
-  * - Processing: Spectral filtering in frequency domain
   ******************************************************************************
   */
 /* USER CODE END Header */
@@ -73,7 +65,6 @@ volatile uint8_t adc_full_ready = 0;
 volatile uint8_t i2s_half_ready = 0;
 volatile uint8_t i2s_full_ready = 0;
 
-// Error tracking
 volatile uint32_t error_flags = 0;
 #define ERROR_CODEC_INIT    (1 << 0)
 #define ERROR_AUDIO_INIT    (1 << 1)
@@ -180,10 +171,10 @@ int main(void)
   MX_TIM2_Init();
   MX_USB_OTG_FS_PCD_Init();
   /* USER CODE BEGIN 2 */
-  
+
   CS43L22_Reset();
   HAL_Delay(10);
-  
+
   if (CS43L22_Init() != CS43L22_OK)
   {
       error_flags |= ERROR_CODEC_INIT;
@@ -198,25 +189,25 @@ int main(void)
 
   memset((void*)adc_buffer, 0, sizeof(adc_buffer));
   memset((void*)i2s_buffer, 0, sizeof(i2s_buffer));
-  
+
   if (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_buffer, HOP_SIZE * 2) != HAL_OK)
   {
       error_flags |= ERROR_ADC_START;
       Error_Handler();
   }
-  
+
   if (HAL_TIM_Base_Start(&htim2) != HAL_OK)
   {
       error_flags |= ERROR_TIM_START;
       Error_Handler();
   }
-  
+
   if (HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t*)i2s_buffer, HOP_SIZE * 2 * 2) != HAL_OK)
   {
       error_flags |= ERROR_I2S_START;
       Error_Handler();
   }
-  
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -230,22 +221,20 @@ int main(void)
           adc_half_ready = 0;
           __enable_irq();
 
-          Audio_ProcessBlock((uint16_t*)&adc_buffer[0], 
+          Audio_ProcessBlock((uint16_t*)&adc_buffer[0],
                             (int16_t*)&i2s_buffer[0]);
       }
 
       if (i2s_full_ready && adc_full_ready)
       {
-          // Clear flags immediately to detect missed callbacks
           i2s_full_ready = 0;
           adc_full_ready = 0;
-          
-          // Process audio block: ADC buffer[HOP_SIZE] -> I2S buffer[HOP_SIZE*2]
-          Audio_ProcessBlock((uint16_t*)&adc_buffer[HOP_SIZE], 
+
+          Audio_ProcessBlock((uint16_t*)&adc_buffer[HOP_SIZE],
                             (int16_t*)&i2s_buffer[HOP_SIZE * 2]);
       }
-      
-      
+
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -255,7 +244,6 @@ int main(void)
 
 /**
   * @brief System Clock Configuration
-  * @retval None
   */
 void SystemClock_Config(void)
 {
@@ -301,7 +289,6 @@ void SystemClock_Config(void)
 /**
   * @brief ADC1 Initialization Function
   * @param None
-  * @retval None
   */
 static void MX_ADC1_Init(void)
 {
@@ -339,7 +326,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = 1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_84CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -353,7 +340,6 @@ static void MX_ADC1_Init(void)
 /**
   * @brief I2C1 Initialization Function
   * @param None
-  * @retval None
   */
 static void MX_I2C1_Init(void)
 {
@@ -387,7 +373,6 @@ static void MX_I2C1_Init(void)
 /**
   * @brief I2S3 Initialization Function
   * @param None
-  * @retval None
   */
 static void MX_I2S3_Init(void)
 {
@@ -421,7 +406,6 @@ static void MX_I2S3_Init(void)
 /**
   * @brief TIM2 Initialization Function
   * @param None
-  * @retval None
   */
 static void MX_TIM2_Init(void)
 {
@@ -466,7 +450,6 @@ static void MX_TIM2_Init(void)
 /**
   * @brief USB_OTG_FS Initialization Function
   * @param None
-  * @retval None
   */
 static void MX_USB_OTG_FS_PCD_Init(void)
 {
@@ -520,7 +503,6 @@ static void MX_DMA_Init(void)
 /**
   * @brief GPIO Initialization Function
   * @param None
-  * @retval None
   */
 static void MX_GPIO_Init(void)
 {

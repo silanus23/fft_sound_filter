@@ -30,7 +30,6 @@
 
 // Audio Processing Parameters
 #define AUDIO_GAIN          0.5f        // Output gain multiplier
-#define NOISE_GATE_THRESH   0.02f       // Noise gate threshold
 #define DC_ALPHA            0.001f       // DC offset filter coefficient (lower = slower tracking)
 
 // Function return codes
