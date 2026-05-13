@@ -92,7 +92,6 @@ static void MX_USB_OTG_FS_PCD_Init(void);
 /**
   * @brief  ADC DMA half-transfer complete callback
   * @param  hadc: ADC handle
-  * @retval None
   * @note   First half of ADC buffer is ready (samples 0 to HOP_SIZE-1)
   */
 void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
@@ -103,7 +102,6 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
 /**
   * @brief  ADC DMA full-transfer complete callback
   * @param  hadc: ADC handle
-  * @retval None
   * @note   Second half of ADC buffer is ready (samples HOP_SIZE to 2*HOP_SIZE-1)
   */
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
@@ -114,7 +112,6 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 /**
   * @brief  I2S DMA half-transfer complete callback
   * @param  hi2s: I2S handle
-  * @retval None
   * @note   First half of I2S buffer has been transmitted, safe to write new data
   */
 void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
@@ -125,7 +122,6 @@ void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
 /**
   * @brief  I2S DMA full-transfer complete callback
   * @param  hi2s: I2S handle
-  * @retval None
   * @note   Second half of I2S buffer has been transmitted, safe to write new data
   */
 void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
@@ -487,14 +483,11 @@ static void MX_USB_OTG_FS_PCD_Init(void)
 static void MX_DMA_Init(void)
 {
 
-  // DMA controller clock enable
   __HAL_RCC_DMA1_CLK_ENABLE();
   __HAL_RCC_DMA2_CLK_ENABLE();
 
-  // DMA1_Stream5_IRQn interrupt configuration
   HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
-  // DMA2_Stream0_IRQn interrupt configuration
   HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
 

@@ -14,7 +14,6 @@ extern I2C_HandleTypeDef hi2c1;
 /**
   * @brief  Hardware reset of CS43L22 codec
   * @param  None
-  * @retval None
   */
 void CS43L22_Reset(void)
 {

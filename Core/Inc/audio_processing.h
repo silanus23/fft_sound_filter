@@ -2,8 +2,6 @@
   ******************************************************************************
   * @file    audio_processing.h
   * @brief   Header file for real-time audio DSP processing
-  * @author  Berkan Tali
-  * @date    2025
   ******************************************************************************
   * @attention
   *
@@ -24,13 +22,13 @@
 #include "arm_math.h"
 
 // DSP Configuration
-#define FFT_SIZE            512    // FFT length in samples
-#define HOP_SIZE            256    // Hop size (50% overlap)
-#define SAMPLE_RATE         48000  // ADC/DAC sample rate in Hz
+#define FFT_SIZE            512
+#define HOP_SIZE            256
+#define SAMPLE_RATE         48000
 
 // Audio Processing Parameters
-#define AUDIO_GAIN          0.5f        // Output gain multiplier
-#define DC_ALPHA            0.001f       // DC offset filter coefficient (lower = slower tracking)
+#define AUDIO_GAIN          0.5f
+#define DC_ALPHA            0.001f
 
 // Function return codes
 #define AUDIO_OK      0

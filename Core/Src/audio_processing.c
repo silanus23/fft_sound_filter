@@ -127,14 +127,12 @@ static void Process_FFT_Block(float32_t *input, float32_t *output)
   */
 uint8_t Audio_Init(void)
 {
-    // Initialize FFT instance
     arm_status status = arm_rfft_fast_init_f32(&fft_instance, FFT_SIZE);
     if (status != ARM_MATH_SUCCESS)
     {
         return AUDIO_ERROR;
     }
 
-    // Initialize window and spectral mask
     Init_Hann_Window();
     Init_Spectral_Mask();
 
@@ -192,7 +190,6 @@ void Audio_ProcessBlock(uint16_t *adc_samples, int16_t *i2s_samples)
 /**
   * @brief  Get current DC offset estimate
   * @param  None
-  * @retval Current DC offset value
   */
 float32_t Audio_GetDCOffset(void)
 {
