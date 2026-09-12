@@ -134,11 +134,12 @@ MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 AS_DEFS = 
 
 # C defines
+# __FPU_PRESENT / __FPU_USED are defined by stm32f407xx.h via the CMSIS device
+# header - defining them here too collides with it and warns on every file.
 C_DEFS =  \
 -DUSE_HAL_DRIVER \
 -DSTM32F407xx \
--DARM_MATH_CM4 \
--D__FPU_PRESENT=1
+-DARM_MATH_CM4
 # AS includes
 # AS includesAS_INCLUDES = 
 
