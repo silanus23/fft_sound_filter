@@ -25,7 +25,6 @@
 Debug/
 Release/
 build/
-Drivers/
 EWARM/
 
 include/secrets.h
