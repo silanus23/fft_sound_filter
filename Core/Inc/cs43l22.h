@@ -60,7 +60,7 @@ uint8_t CS43L22_WriteReg(uint8_t reg, uint8_t value);
   * @brief  Initialize CS43L22 codec
   * @param  None
   * @retval CS43L22_OK on success, CS43L22_ERROR on failure
-  * @note   Configures codec for I2S input, 48kHz, stereo output
+  * @note   Configures codec for I2S input, 46.875kHz, stereo output
   */
 uint8_t CS43L22_Init(void);
 

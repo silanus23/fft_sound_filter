@@ -21,17 +21,18 @@ __attribute__((aligned(4))) static volatile float32_t spectral_mask[FFT_SIZE / 2
 static arm_rfft_fast_instance_f32 fft_instance;
 static float32_t dc_offset = 2048.0f;
 
-static void Init_Hann_Window(void);
+static void Init_Sqrt_Hann_Window(void);
 static void Init_Spectral_Mask(void);
 static void Process_FFT_Block(float32_t *input, float32_t *output);
 static void Apply_Spectral_Mask(float32_t *spectrum);
 
-// Hann window: w[n] = 0.5 * (1 - cos(2*pi*n/(N-1))), reduces spectral leakage
-static void Init_Hann_Window(void)
+// Periodic square-root Hann: w[n] = sin(pi*n/N). Applied before FFT and after IFFT,
+// so the effective window is periodic Hann, which sums to exactly 1 at 50% overlap (COLA)
+static void Init_Sqrt_Hann_Window(void)
 {
     for (int n = 0; n < FFT_SIZE; n++)
     {
-        window[n] = 0.5f * (1.0f - arm_cos_f32(2.0f * PI * n / (FFT_SIZE - 1)));
+        window[n] = sinf(PI * n / FFT_SIZE);
     }
 }
 
@@ -108,7 +109,7 @@ static void Apply_Spectral_Mask(float32_t *spectrum)
     }
 }
 
-// Window -> FFT -> spectral mask -> IFFT -> window again for COLA compliance
+// sqrt-Hann -> FFT -> spectral mask -> IFFT -> sqrt-Hann again (product is COLA Hann)
 static void Process_FFT_Block(float32_t *input, float32_t *output)
 {
   static float32_t fft_buffer[FFT_SIZE];
@@ -133,7 +134,7 @@ uint8_t Audio_Init(void)
         return AUDIO_ERROR;
     }
 
-    Init_Hann_Window();
+    Init_Sqrt_Hann_Window();
     Init_Spectral_Mask();
 
     memset(overlap_buffer, 0, sizeof(overlap_buffer));

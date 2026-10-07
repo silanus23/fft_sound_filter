@@ -8,8 +8,8 @@
   * This module implements overlap-add FFT-based audio processing:
   * - FFT size: 512 samples
   * - Hop size: 256 samples (50% overlap)
-  * - Sample rate: 48kHz
-  * - Hann windowing to reduce spectral leakage
+  * - Sample rate: 46.875kHz (ADC trigger locked to the actual I2S rate)
+  * - Square-root Hann analysis + synthesis windows (sum to 1 at 50% overlap)
   * - Configurable spectral filtering
   *
   ******************************************************************************
@@ -24,7 +24,7 @@
 // DSP Configuration
 #define FFT_SIZE            512
 #define HOP_SIZE            256
-#define SAMPLE_RATE         48000
+#define SAMPLE_RATE         46875
 
 // Audio Processing Parameters
 #define AUDIO_GAIN          0.5f

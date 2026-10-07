@@ -77,8 +77,6 @@ Drivers/CMSIS/DSP/Source/TransformFunctions/arm_bitreversal2.c \
 Drivers/CMSIS/DSP/Source/CommonTables/arm_common_tables.c \
 Drivers/CMSIS/DSP/Source/CommonTables/arm_const_structs.c \
 Drivers/CMSIS/DSP/Source/BasicMathFunctions/arm_mult_f32.c \
-Drivers/CMSIS/DSP/Source/SupportFunctions/arm_copy_f32.c \
-Drivers/CMSIS/DSP/Source/FastMathFunctions/arm_cos_f32.c \
 Drivers/CMSIS/DSP/Source/BasicMathFunctions/arm_add_f32.c \
 Drivers/CMSIS/DSP/Source/BasicMathFunctions/arm_scale_f32.c \
 Drivers/CMSIS/DSP/Source/SupportFunctions/arm_float_to_q15.c \
@@ -90,8 +88,6 @@ startup_stm32f407xx.s
 # ASMM sources
 ASMM_SOURCES = 
 
-# ASMMC sources
-ASMMC_SOURCE = 
 
 
 #######################################
@@ -134,14 +130,14 @@ MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 AS_DEFS = 
 
 # C defines
-# __FPU_PRESENT / __FPU_USED are defined by stm32f407xx.h via the CMSIS device
-# header - defining them here too collides with it and warns on every file.
+# __FPU_PRESENT is defined by stm32f407xx.h (core_cm4.h derives __FPU_USED from it
+# and the -mfpu/-mfloat-abi flags) - defining it here too collides and warns on every file.
 C_DEFS =  \
 -DUSE_HAL_DRIVER \
 -DSTM32F407xx \
 -DARM_MATH_CM4
 # AS includes
-# AS includesAS_INCLUDES = 
+AS_INCLUDES = 
 
 # C includes
 C_INCLUDES =  \
@@ -193,8 +189,6 @@ OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES)))
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASMM_SOURCES:.S=.o)))
 vpath %.S $(sort $(dir $(ASMM_SOURCES)))
-OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASMMC_SOURCES:.c=.o)))
-vpath %.S $(sort $(dir $(ASMMC_SOURCES)))
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR) 
 	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
